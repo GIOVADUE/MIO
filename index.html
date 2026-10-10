@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>MIO</title>
+  <meta name="description" content="Il tuo spazio personale: pagine, notizie, Gmail, turni, note e calendario.">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#191919" media="(prefers-color-scheme: dark)">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="MIO">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="ws">
+        <div class="logo">M</div>
+        <span id="wsName">MIO</span>
+      </div>
+      <nav class="nav" id="mainNav">
+        <a href="#/dashboard" data-view="dashboard"><span class="ico">🏠</span>Dashboard</a>
+        <a href="#/notizie" data-view="notizie"><span class="ico">📰</span>Notizie</a>
+        <a href="#/gmail" data-view="gmail"><span class="ico">✉️</span>Gmail</a>
+        <a href="#/turni" data-view="turni"><span class="ico">📊</span>Turni di lavoro</a>
+        <a href="#/note" data-view="note"><span class="ico">💡</span>Note</a>
+        <a href="#/calendario" data-view="calendario"><span class="ico">📅</span>Calendario</a>
+      </nav>
+      <div class="side-sec">
+        <span>Pagine</span>
+        <button class="icon-btn sm" id="newPageBtn" title="Nuova pagina" aria-label="Nuova pagina">+</button>
+      </div>
+      <nav class="nav" id="pagesNav"></nav>
+      <div class="side-bottom">
+        <nav class="nav">
+          <a href="#/impostazioni" data-view="impostazioni"><span class="ico">⚙️</span>Impostazioni</a>
+        </nav>
+      </div>
+    </aside>
+    <div class="scrim" id="scrim"></div>
+    <main id="main">
+      <div class="topbar">
+        <button class="icon-btn" id="menuBtn" aria-label="Menu">☰</button>
+        <span class="topbar-title" id="topTitle">MIO</span>
+      </div>
+      <div id="view"></div>
+    </main>
+  </div>
+
+  <script src="js/util.js"></script>
+  <script src="js/settings.js"></script>
+  <script src="js/pages.js"></script>
+  <script src="js/news.js"></script>
+  <script src="js/gmail.js"></script>
+  <script src="js/turni.js"></script>
+  <script src="js/notes.js"></script>
+  <script src="js/calendar.js"></script>
+  <script src="js/dashboard.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
