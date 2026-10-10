@@ -10,7 +10,8 @@ Un'app in stile Notion, più semplice, che riunisce in un unico posto:
 | ✉️ **Gmail** | Posta in arrivo, da leggere, speciali e importanti; ricerca; pulsante "Scrivi" (sola lettura) |
 | 📊 **Turni di lavoro** | Tabella stile Excel: settimana o mese, colori, ore totali, copertura, esporta in Excel/CSV, importa CSV, stampa |
 | 💡 **Note** | Stile Google Keep: colori, note fissate, elenchi con caselle, ricerca |
-| 📅 **Calendario** | Stile iPhone: vista mensile, pallini sui giorni con eventi, scorrimento per cambiare mese, i tuoi turni già inseriti |
+| 📅 **Calendario** | Stile iPhone: vista mensile, pallini sui giorni con eventi, eventi ricorrenti (giorno/settimana/mese/anno), scorrimento per cambiare mese, i tuoi turni già inseriti |
+| 🔍 **Cerca** | Ricerca globale con `Ctrl+K` (`⌘K` su Mac) su pagine, note, eventi e turni |
 
 Non servono installazioni, server o account: è fatta solo di HTML, CSS e JavaScript.
 I dati vengono salvati **nel browser** del dispositivo che usi. Da *Impostazioni → Backup* puoi esportarli e importarli.
@@ -110,5 +111,6 @@ js/turni.js       tabella turni
 js/notes.js       note stile Keep
 js/calendar.js    calendario stile iPhone
 js/settings.js    impostazioni e backup
+js/search.js      ricerca globale (Ctrl+K)
 manifest.json, sw.js, icons/   installazione come app e uso offline
 ```

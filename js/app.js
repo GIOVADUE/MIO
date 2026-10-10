@@ -33,6 +33,8 @@ window.addEventListener('hashchange', route);
 $('#menuBtn').onclick = () => document.body.classList.toggle('nav-open');
 $('#scrim').onclick = () => document.body.classList.remove('nav-open');
 $('#newPageBtn').onclick = () => Pages.create();
+$('#searchBtn').onclick = () => { document.body.classList.remove('nav-open'); Search.open(); };
+if (/Mac|iPhone|iPad/.test(navigator.platform)) $('#searchBtn kbd').textContent = '⌘K';
 
 applyTheme();
 renderPagesNav();

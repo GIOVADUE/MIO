@@ -4,8 +4,20 @@ const CAL_COLORS = [['#ff3b30', 'Rosso'], ['#ff9500', 'Arancione'], ['#ffcc00', 
 const Calendar = {
   all() { return Store.get('events', []); },
   save(l) { Store.set('events', l); },
+  repeats: [['', 'Mai'], ['daily', 'Ogni giorno'], ['weekly', 'Ogni settimana'], ['monthly', 'Ogni mese'], ['yearly', 'Ogni anno']],
+  // l'evento cade nel giorno "key"? (gestisce le ripetizioni)
+  occurs(e, key) {
+    if (e.date === key) return true;
+    if (!e.repeat || key < e.date || (e.until && key > e.until)) return false;
+    const a = parseYmd(e.date), b = parseYmd(key);
+    if (e.repeat === 'daily') return true;
+    if (e.repeat === 'weekly') return a.getDay() === b.getDay();
+    if (e.repeat === 'monthly') return a.getDate() === b.getDate();
+    if (e.repeat === 'yearly') return a.getDate() === b.getDate() && a.getMonth() === b.getMonth();
+    return false;
+  },
   forDate(key) {
-    return this.all().filter(e => e.date === key).sort((a, b) => (a.allDay ? -1 : 0) - (b.allDay ? -1 : 0) || (a.start || '').localeCompare(b.start || ''));
+    return this.all().filter(e => this.occurs(e, key)).sort((a, b) => (a.allDay ? -1 : 0) - (b.allDay ? -1 : 0) || (a.start || '').localeCompare(b.start || ''));
   },
   // eventi + il mio turno di quel giorno
   dayItems(date) {
@@ -19,7 +31,7 @@ const Calendar = {
 
   sheet(ev, onDone) {
     const isNew = !ev.id;
-    const e = { title: '', place: '', date: ymd(new Date()), allDay: false, start: '09:00', end: '10:00', color: '#007aff', notes: '', ...ev };
+    const e = { title: '', place: '', date: ymd(new Date()), allDay: false, start: '09:00', end: '10:00', color: '#007aff', notes: '', repeat: '', until: '', ...ev };
     const m = openModal(`
       <div class="ios-sheet">
         <div class="ios-sheet-head">
@@ -38,6 +50,10 @@ const Calendar = {
           <label class="ios-row time-row"><span>Fine</span><input type="time" id="eEnd" value="${e.end}"></label>
         </div>
         <div class="ios-group">
+          <label class="ios-row"><span>Ripeti</span><select id="eRepeat" class="ios-select">${Calendar.repeats.map(([v, l]) => `<option value="${v}" ${v === e.repeat ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+          <label class="ios-row until-row"><span>Fine ripetizione</span><input type="date" id="eUntil" value="${e.until}" aria-label="Fine ripetizione (vuoto = mai)"></label>
+        </div>
+        <div class="ios-group">
           <div class="ios-row"><span>Calendario</span><div class="cal-colors">${CAL_COLORS.map(([c, n]) => `<button class="dot ${c === e.color ? 'on' : ''}" style="background:${c}" data-c="${c}" title="${n}" aria-label="${n}"></button>`).join('')}</div></div>
         </div>
         <div class="ios-group"><textarea id="eNotes" placeholder="Note" rows="3" aria-label="Note">${esc(e.notes)}</textarea></div>
@@ -46,6 +62,9 @@ const Calendar = {
     const box = m.el;
     const sync = () => $$('.time-row', box).forEach(r => { r.style.display = $('#eAll', box).checked ? 'none' : ''; });
     $('#eAll', box).onchange = sync;
+    const syncRep = () => { $('.until-row', box).style.display = $('#eRepeat', box).value ? '' : 'none'; };
+    $('#eRepeat', box).onchange = syncRep;
+    syncRep();
     sync();
     $('.cal-colors', box).onclick = x => {
       const b = x.target.closest('.dot');
@@ -57,6 +76,7 @@ const Calendar = {
       const a = x.target.closest('[data-a]')?.dataset.a;
       if (a === 'cancel') m.close();
       if (a === 'del') {
+        if (e.repeat && !confirm('Questo evento si ripete: eliminare tutte le ripetizioni?')) return;
         Calendar.save(Calendar.all().filter(y => y.id !== e.id));
         m.close();
         onDone(e.date);
@@ -65,7 +85,8 @@ const Calendar = {
         const out = {
           ...e, id: e.id || uid(), title: $('#eTitle', box).value.trim() || 'Nuovo evento', place: $('#ePlace', box).value.trim(),
           allDay: $('#eAll', box).checked, date: $('#eDate', box).value || e.date,
-          start: $('#eStart', box).value, end: $('#eEnd', box).value, notes: $('#eNotes', box).value
+          start: $('#eStart', box).value, end: $('#eEnd', box).value, notes: $('#eNotes', box).value,
+          repeat: $('#eRepeat', box).value, until: $('#eRepeat', box).value ? $('#eUntil', box).value : ''
         };
         const l = Calendar.all().filter(y => y.id !== out.id);
         l.push(out);
@@ -119,7 +140,7 @@ Views.calendario = {
       let html = '<span class="ios-cell empty"></span>'.repeat(lead);
       for (let d = 1; d <= n; d++) {
         const date = new Date(month.getFullYear(), month.getMonth(), d), k = ymd(date);
-        const dots = events.filter(e => e.date === k).slice(0, 3).map(e => `<i style="background:${e.color}"></i>`);
+        const dots = events.filter(e => Calendar.occurs(e, k)).slice(0, 3).map(e => `<i style="background:${e.color}"></i>`);
         const s = Turni.myShift(date);
         if (s) dots.unshift(`<i class="shift" style="background:${s.type ? s.type.color : '#999'}"></i>`);
         const we = date.getDay() === 0 || date.getDay() === 6;
@@ -133,7 +154,7 @@ Views.calendario = {
       $('#cEvents', view).innerHTML = items.length
         ? items.map(e => `<div class="ios-ev ${e.kind}" ${e.id ? `data-id="${e.id}"` : ''}>
             <span class="bar" style="background:${e.color}"></span>
-            <div class="ios-ev-main"><div class="ios-ev-title">${esc(e.title)}</div>${e.place ? `<div class="muted small">${esc(e.place)}</div>` : ''}</div>
+            <div class="ios-ev-main"><div class="ios-ev-title">${esc(e.title)}${e.repeat ? ' <span class="muted" title="Si ripete">↻</span>' : ''}</div>${e.place ? `<div class="muted small">${esc(e.place)}</div>` : ''}</div>
             <div class="ios-ev-time">${esc(Calendar.timeLabel(e))}</div></div>`).join('')
         : '<div class="ios-none">Nessun evento</div>';
     }
