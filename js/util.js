@@ -45,8 +45,16 @@ const Store = {
     try { const v = localStorage.getItem('mio.' + key); return v ? JSON.parse(v) : def; } catch { return def; }
   },
   set(key, val) {
-    try { localStorage.setItem('mio.' + key, JSON.stringify(val)); } catch { toast('Impossibile salvare: memoria del browser non disponibile'); }
+    try {
+      localStorage.setItem('mio.' + key, JSON.stringify(val));
+      if (!Store.local.includes(key)) {
+        localStorage.setItem('mio.__changed', Date.now());
+        document.dispatchEvent(new Event('mio:changed'));
+      }
+    } catch { toast('Impossibile salvare: memoria del browser non disponibile'); }
   },
+  // chiavi che restano su questo dispositivo e non vengono sincronizzate
+  local: ['turniMode', 'firedAlerts', '__changed', '__synced'],
   keys() {
     try { return Object.keys(localStorage).filter(k => k.startsWith('mio.')); } catch { return []; }
   }

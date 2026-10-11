@@ -1,7 +1,7 @@
 /* Service worker: permette di aprire MIO anche offline. Aggiorna VERSION quando modifichi i file. */
-const VERSION = 'mio-v2';
+const VERSION = 'mio-v3';
 const FILES = ['./', 'index.html', 'css/style.css', 'manifest.json', 'icons/icon.svg', 'icons/icon-180.png',
-  'js/util.js', 'js/settings.js', 'js/pages.js', 'js/news.js', 'js/gmail.js', 'js/turni.js', 'js/notes.js', 'js/calendar.js', 'js/dashboard.js', 'js/search.js', 'js/app.js'];
+  'js/util.js', 'js/settings.js', 'js/pages.js', 'js/news.js', 'js/gmail.js', 'js/sync.js', 'js/turni.js', 'js/notes.js', 'js/calendar.js', 'js/reminders.js', 'js/dashboard.js', 'js/search.js', 'js/app.js'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));

@@ -21,7 +21,8 @@ const Calendar = {
   },
   // eventi + il mio turno di quel giorno
   dayItems(date) {
-    const items = this.forDate(ymd(date)).map(e => ({ ...e, kind: 'event' }));
+    const items = [...this.forDate(ymd(date)).map(e => ({ ...e, kind: 'event' })), ...GCal.forDate(ymd(date))]
+      .sort((a, b) => (b.allDay ? 1 : 0) - (a.allDay ? 1 : 0) || (a.start || '').localeCompare(b.start || ''));
     const s = Turni.myShift(date);
     if (s && s.type && s.type.start) items.unshift({ kind: 'shift', title: `Turno: ${s.type.label}`, start: s.type.start, end: s.type.end, color: s.type.color });
     else if (s) items.unshift({ kind: 'shift', title: s.type ? s.type.label : `Turno ${s.code}`, allDay: true, color: s.type ? s.type.color : '#999' });
@@ -31,7 +32,7 @@ const Calendar = {
 
   sheet(ev, onDone) {
     const isNew = !ev.id;
-    const e = { title: '', place: '', date: ymd(new Date()), allDay: false, start: '09:00', end: '10:00', color: '#007aff', notes: '', repeat: '', until: '', ...ev };
+    const e = { title: '', place: '', date: ymd(new Date()), allDay: false, start: '09:00', end: '10:00', color: '#007aff', notes: '', repeat: '', until: '', alert: '', ...ev };
     const m = openModal(`
       <div class="ios-sheet">
         <div class="ios-sheet-head">
@@ -51,6 +52,7 @@ const Calendar = {
         </div>
         <div class="ios-group">
           <label class="ios-row"><span>Ripeti</span><select id="eRepeat" class="ios-select">${Calendar.repeats.map(([v, l]) => `<option value="${v}" ${v === e.repeat ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+          <label class="ios-row"><span>Avviso</span><select id="eAlert" class="ios-select">${Reminders.options.map(([v, l]) => `<option value="${v}" ${String(v) === String(e.alert) ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
           <label class="ios-row until-row"><span>Fine ripetizione</span><input type="date" id="eUntil" value="${e.until}" aria-label="Fine ripetizione (vuoto = mai)"></label>
         </div>
         <div class="ios-group">
@@ -62,6 +64,11 @@ const Calendar = {
     const box = m.el;
     const sync = () => $$('.time-row', box).forEach(r => { r.style.display = $('#eAll', box).checked ? 'none' : ''; });
     $('#eAll', box).onchange = sync;
+    // se la fine è prima dell'inizio, la sposta a un'ora dopo
+    $('#eStart', box).addEventListener('change', () => {
+      const s = $('#eStart', box).value, f = $('#eEnd', box);
+      if (s && (!f.value || f.value <= s)) { const h = (Number(s.slice(0, 2)) + 1) % 24; f.value = pad(h) + s.slice(2); }
+    });
     const syncRep = () => { $('.until-row', box).style.display = $('#eRepeat', box).value ? '' : 'none'; };
     $('#eRepeat', box).onchange = syncRep;
     syncRep();
@@ -86,8 +93,10 @@ const Calendar = {
           ...e, id: e.id || uid(), title: $('#eTitle', box).value.trim() || 'Nuovo evento', place: $('#ePlace', box).value.trim(),
           allDay: $('#eAll', box).checked, date: $('#eDate', box).value || e.date,
           start: $('#eStart', box).value, end: $('#eEnd', box).value, notes: $('#eNotes', box).value,
-          repeat: $('#eRepeat', box).value, until: $('#eRepeat', box).value ? $('#eUntil', box).value : ''
+          repeat: $('#eRepeat', box).value, until: $('#eRepeat', box).value ? $('#eUntil', box).value : '',
+          alert: $('#eAlert', box).value
         };
+        if (out.alert !== '') Reminders.askPermission();
         const l = Calendar.all().filter(y => y.id !== out.id);
         l.push(out);
         Calendar.save(l);
@@ -140,7 +149,7 @@ Views.calendario = {
       let html = '<span class="ios-cell empty"></span>'.repeat(lead);
       for (let d = 1; d <= n; d++) {
         const date = new Date(month.getFullYear(), month.getMonth(), d), k = ymd(date);
-        const dots = events.filter(e => Calendar.occurs(e, k)).slice(0, 3).map(e => `<i style="background:${e.color}"></i>`);
+        const dots = [...events.filter(e => Calendar.occurs(e, k)), ...GCal.forDate(k)].slice(0, 3).map(e => `<i style="background:${e.color}"></i>`);
         const s = Turni.myShift(date);
         if (s) dots.unshift(`<i class="shift" style="background:${s.type ? s.type.color : '#999'}"></i>`);
         const we = date.getDay() === 0 || date.getDay() === 6;
@@ -148,13 +157,14 @@ Views.calendario = {
           <span class="num">${d}</span><span class="dots">${dots.slice(0, 3).join('')}</span></button>`;
       }
       grid.innerHTML = html;
+      GCal.ensure(month, () => view.isConnected && paint());
 
       $('#cDayTitle', view).textContent = fullDate(selected);
       const items = Calendar.dayItems(selected);
       $('#cEvents', view).innerHTML = items.length
-        ? items.map(e => `<div class="ios-ev ${e.kind}" ${e.id ? `data-id="${e.id}"` : ''}>
+        ? items.map(e => `<div class="ios-ev ${e.kind}" ${e.id ? `data-id="${e.id}"` : ''} ${e.link ? `data-link="${esc(e.link)}" title="Apri in Google Calendar"` : ''}>
             <span class="bar" style="background:${e.color}"></span>
-            <div class="ios-ev-main"><div class="ios-ev-title">${esc(e.title)}${e.repeat ? ' <span class="muted" title="Si ripete">↻</span>' : ''}</div>${e.place ? `<div class="muted small">${esc(e.place)}</div>` : ''}</div>
+            <div class="ios-ev-main"><div class="ios-ev-title">${esc(e.title)}${e.repeat ? ' <span class="muted" title="Si ripete">↻</span>' : ''}${e.alert !== undefined && e.alert !== '' ? ' <span class="muted" title="Promemoria">🔔</span>' : ''}${e.kind === 'google' ? ' <span class="gbadge">Google</span>' : ''}</div>${e.place ? `<div class="muted small">${esc(e.place)}</div>` : ''}</div>
             <div class="ios-ev-time">${esc(Calendar.timeLabel(e))}</div></div>`).join('')
         : '<div class="ios-none">Nessun evento</div>';
     }
@@ -176,6 +186,7 @@ Views.calendario = {
       const r = e.target.closest('.ios-ev');
       if (!r) return;
       if (r.classList.contains('shift')) { location.hash = '#/turni'; return; }
+      if (r.dataset.link) { window.open(r.dataset.link, '_blank', 'noopener'); return; }
       const ev = Calendar.all().find(x => x.id === r.dataset.id);
       if (ev) Calendar.sheet(ev, done);
     };

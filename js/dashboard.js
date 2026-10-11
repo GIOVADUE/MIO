@@ -60,6 +60,8 @@ Views.dashboard = {
       </div>`;
 
     $('#dNewPage', view).onclick = () => Pages.create();
+    GCal.ensure(now, () => view.isConnected && Views.dashboard.render(view));
+    GCal.ensure(addDays(now, 1), () => view.isConnected && Views.dashboard.render(view));
 
     News.fetch(Settings.get().newsTopic).then(list => {
       const box = $('#dNews', view);

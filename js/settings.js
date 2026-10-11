@@ -1,6 +1,6 @@
 /* Impostazioni dell'app */
 const Settings = {
-  defaults: { name: '', theme: 'auto', gmailClientId: '', myEmployee: '', newsTopic: 'top' },
+  defaults: { name: '', theme: 'auto', gmailClientId: '', myEmployee: '', newsTopic: 'top', showGoogleCal: true, autoSync: true },
   get() { return { ...this.defaults, ...Store.get('settings', {}) }; },
   set(patch) { Store.set('settings', { ...this.get(), ...patch }); applyTheme(); },
 };
@@ -40,11 +40,20 @@ Views.impostazioni = {
         </section>
 
         <section class="card form">
-          <h3>Gmail</h3>
+          <h3>Account Google</h3>
           <label class="field"><span>Google OAuth Client ID</span>
             <input id="sCid" value="${esc(s.gmailClientId)}" placeholder="123456-abc.apps.googleusercontent.com" spellcheck="false"></label>
-          <p class="muted small">Serve per leggere la tua posta. Le istruzioni sono nella sezione <a href="#/gmail">Gmail</a>.
-          Il Client ID non è un segreto: resta solo nel tuo browser.</p>
+          <p class="muted small">Serve per Gmail, Google Calendar e la sincronizzazione. Le istruzioni sono nella sezione <a href="#/gmail">Gmail</a>.
+          Il Client ID non è un segreto.</p>
+          <div class="row gap wrap" id="gAccount"></div>
+          <label class="check"><input type="checkbox" id="sGcal" ${s.showGoogleCal ? 'checked' : ''}> Mostra gli eventi di Google Calendar nel calendario</label>
+          <label class="check"><input type="checkbox" id="sSync" ${s.autoSync ? 'checked' : ''}> Sincronizza automaticamente i dati tra i miei dispositivi (Google Drive)</label>
+          <div class="row gap wrap">
+            <button class="btn" id="bSync">🔄 Sincronizza ora</button>
+            <button class="btn ghost" id="bPull">⬇️ Scarica i dati da Drive</button>
+            <span class="muted small" id="syncStatus">${esc(Sync.lastStatus())}</span>
+          </div>
+          <p class="muted small">Per usare MIO su iPhone e computer con gli stessi dati: inserisci lo stesso Client ID e accedi con lo stesso account Google su entrambi.</p>
         </section>
 
         <section class="card form">
@@ -63,7 +72,28 @@ Views.impostazioni = {
     $('#sName', view).addEventListener('input', e => Settings.set({ name: e.target.value.trim() }));
     $('#sTheme', view).addEventListener('change', e => Settings.set({ theme: e.target.value }));
     $('#sEmp', view).addEventListener('change', e => Settings.set({ myEmployee: e.target.value }));
-    $('#sCid', view).addEventListener('change', e => { Settings.set({ gmailClientId: e.target.value.trim() }); toast('Client ID salvato'); });
+    $('#sCid', view).addEventListener('change', e => { Settings.set({ gmailClientId: e.target.value.trim() }); toast('Client ID salvato'); paintAccount(); });
+    $('#sGcal', view).addEventListener('change', e => Settings.set({ showGoogleCal: e.target.checked }));
+    $('#sSync', view).addEventListener('change', e => { Settings.set({ autoSync: e.target.checked }); if (e.target.checked) Sync.run({ interactive: true }); });
+
+    function paintAccount() {
+      const box = $('#gAccount', view);
+      const missing = Gmail.connected() && !(Gmail.has('calendar') && Gmail.has('drive'));
+      box.innerHTML = !Gmail.configured() ? ''
+        : Gmail.connected()
+          ? `<span class="ok-badge">● Collegato</span>${missing ? '<span class="muted small">Accedi di nuovo per abilitare Calendar e Drive</span><button class="btn" id="gIn">Accedi di nuovo</button>' : ''}<button class="btn ghost" id="gOutS">Esci</button>`
+          : '<button class="btn primary" id="gIn">Accedi con Google</button>';
+      const inBtn = $('#gIn', box), outBtn = $('#gOutS', box);
+      if (inBtn) inBtn.onclick = async () => { try { await Gmail.connect(); paintAccount(); } catch (e) { toast(e.message); } };
+      if (outBtn) outBtn.onclick = () => { Gmail.disconnect(); paintAccount(); };
+    }
+    paintAccount();
+    const needDrive = () => { if (!Gmail.has('drive')) { toast('Accedi prima con Google'); return true; } return false; };
+    $('#bSync', view).onclick = () => { if (!needDrive()) Sync.run({ interactive: true }); };
+    $('#bPull', view).onclick = async () => {
+      if (needDrive() || !confirm('Sostituire i dati di questo dispositivo con quelli salvati su Google Drive?')) return;
+      try { await Sync.pull(); location.reload(); } catch (e) { toast(e.message); }
+    };
 
     $('#bExport', view).onclick = () => {
       const data = {};

@@ -1,16 +1,24 @@
-/* Dashboard Gmail (sola lettura) tramite Google Identity Services + Gmail API */
+/* Accesso Google (Gmail, Calendar, Drive) tramite Google Identity Services + dashboard Gmail */
+const GOOGLE_SCOPES = {
+  gmail: 'https://www.googleapis.com/auth/gmail.readonly',
+  calendar: 'https://www.googleapis.com/auth/calendar.readonly',
+  drive: 'https://www.googleapis.com/auth/drive.appdata'
+};
+
 const Gmail = {
   token: null,
   exp: 0,
+  scope: '',
 
   restore() {
     try {
       const s = JSON.parse(sessionStorage.getItem('mio.gmailToken') || 'null');
-      if (s && s.exp > Date.now()) { this.token = s.token; this.exp = s.exp; }
+      if (s && s.exp > Date.now()) { this.token = s.token; this.exp = s.exp; this.scope = s.scope || GOOGLE_SCOPES.gmail; }
     } catch { /* niente */ }
   },
   configured() { return !!Settings.get().gmailClientId; },
   connected() { return !!this.token && Date.now() < this.exp; },
+  has(name) { return this.connected() && this.scope.includes(GOOGLE_SCOPES[name]); },
 
   loadGis() {
     return new Promise((res, rej) => {
@@ -30,12 +38,14 @@ const Gmail = {
     return new Promise((res, rej) => {
       const tc = google.accounts.oauth2.initTokenClient({
         client_id: cid,
-        scope: 'https://www.googleapis.com/auth/gmail.readonly',
+        scope: Object.values(GOOGLE_SCOPES).join(' '),
         callback: r => {
           if (r.error) return rej(new Error(r.error_description || r.error));
           this.token = r.access_token;
           this.exp = Date.now() + (Number(r.expires_in) - 60) * 1000;
-          try { sessionStorage.setItem('mio.gmailToken', JSON.stringify({ token: this.token, exp: this.exp })); } catch { /* niente */ }
+          this.scope = r.scope || '';
+          try { sessionStorage.setItem('mio.gmailToken', JSON.stringify({ token: this.token, exp: this.exp, scope: this.scope })); } catch { /* niente */ }
+          document.dispatchEvent(new Event('mio:google'));
           res();
         },
         error_callback: e => rej(new Error(e.message || e.type || 'Accesso annullato'))
@@ -51,11 +61,18 @@ const Gmail = {
     try { sessionStorage.removeItem('mio.gmailToken'); } catch { /* niente */ }
   },
 
+  // richiesta autenticata a un'API Google
+  async gfetch(url, opts = {}) {
+    if (!this.connected()) throw new Error('Accedi con Google');
+    const r = await fetch(url, { ...opts, headers: { Authorization: 'Bearer ' + this.token, ...(opts.headers || {}) } });
+    if (r.status === 401) { this.disconnect(); throw new Error('Sessione Google scaduta: accedi di nuovo'); }
+    if (r.status === 403) throw new Error('Accesso negato da Google: controlla che l\'API sia attivata nel progetto Google Cloud');
+    if (!r.ok) throw new Error('Errore Google (' + r.status + ')');
+    return r;
+  },
+
   async api(path) {
-    const r = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/' + path, { headers: { Authorization: 'Bearer ' + this.token } });
-    if (r.status === 401) { this.disconnect(); throw new Error('Sessione Gmail scaduta: ricollegati'); }
-    if (!r.ok) throw new Error('Errore Gmail (' + r.status + ')');
-    return r.json();
+    return (await this.gfetch('https://gmail.googleapis.com/gmail/v1/users/me/' + path)).json();
   },
 
   async messages(q = 'in:inbox', n = 20) {
@@ -96,15 +113,18 @@ const Gmail = {
     const origin = location.protocol.startsWith('http') ? location.origin : 'https://TUONOME.github.io';
     return `
       <div class="card guide">
-        <h3>Collega Gmail in 5 passi</h3>
+        <h3>Collega il tuo account Google in 5 passi</h3>
         <ol>
           <li>Apri <a href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noopener">Google Cloud Console</a> e crea un progetto (es. "MIO").</li>
-          <li>Attiva la <a href="https://console.cloud.google.com/apis/library/gmail.googleapis.com" target="_blank" rel="noopener">Gmail API</a>.</li>
+          <li>Attiva le API: <a href="https://console.cloud.google.com/apis/library/gmail.googleapis.com" target="_blank" rel="noopener">Gmail</a>,
+            <a href="https://console.cloud.google.com/apis/library/calendar-json.googleapis.com" target="_blank" rel="noopener">Google Calendar</a> e
+            <a href="https://console.cloud.google.com/apis/library/drive.googleapis.com" target="_blank" rel="noopener">Google Drive</a> (per sincronizzare i dati tra i dispositivi).</li>
           <li>In <b>Schermata consenso OAuth</b> scegli "Esterno", compila nome e email, e aggiungi te stesso tra gli <b>utenti di test</b>.</li>
           <li>In <b>Credenziali → Crea credenziali → ID client OAuth</b> scegli "Applicazione web" e in <b>Origini JavaScript autorizzate</b> inserisci: <code>${esc(origin)}</code></li>
           <li>Copia l'<b>ID client</b> e incollalo in <a href="#/impostazioni">Impostazioni</a>.</li>
         </ol>
-        <p class="muted small">L'accesso è in sola lettura e avviene direttamente tra il tuo browser e Google: nessun server intermedio.
+        <p class="muted small">Gmail e Calendar sono in sola lettura. Drive viene usato solo per una cartella privata e nascosta dell'app, dove MIO salva i tuoi dati per sincronizzarli: non vede gli altri tuoi file.
+        Tutto avviene direttamente tra il tuo browser e Google, senza server intermedi.
         Gmail non funziona aprendo il file dal computer (file://): pubblica l'app su GitHub Pages (vedi README).</p>
       </div>`;
   }

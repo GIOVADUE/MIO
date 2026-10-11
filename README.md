@@ -10,7 +10,8 @@ Un'app in stile Notion, più semplice, che riunisce in un unico posto:
 | ✉️ **Gmail** | Posta in arrivo, da leggere, speciali e importanti; ricerca; pulsante "Scrivi" (sola lettura) |
 | 📊 **Turni di lavoro** | Tabella stile Excel: settimana o mese, colori, ore totali, copertura, esporta in Excel/CSV, importa CSV, stampa |
 | 💡 **Note** | Stile Google Keep: colori, note fissate, elenchi con caselle, ricerca |
-| 📅 **Calendario** | Stile iPhone: vista mensile, pallini sui giorni con eventi, eventi ricorrenti (giorno/settimana/mese/anno), scorrimento per cambiare mese, i tuoi turni già inseriti |
+| 📅 **Calendario** | Stile iPhone: vista mensile, pallini sui giorni con eventi, eventi ricorrenti (giorno/settimana/mese/anno), promemoria 🔔, eventi di Google Calendar, scorrimento per cambiare mese, i tuoi turni già inseriti |
+| 🔄 **Sincronizzazione** | Stessi dati su iPhone e computer tramite una cartella privata dell'app su Google Drive |
 | 🔍 **Cerca** | Ricerca globale con `Ctrl+K` (`⌘K` su Mac) su pagine, note, eventi e turni |
 
 Non servono installazioni, server o account: è fatta solo di HTML, CSS e JavaScript.
@@ -71,17 +72,31 @@ Apri l'indirizzo GitHub Pages con **Safari**, tocca **Condividi → Aggiungi all
 
 ---
 
-## ✉️ Collegare Gmail
+## ✉️ Collegare l'account Google (Gmail, Calendar, sincronizzazione)
 
 1. Apri [Google Cloud Console](https://console.cloud.google.com/projectcreate) e crea un progetto.
-2. Attiva la [Gmail API](https://console.cloud.google.com/apis/library/gmail.googleapis.com).
+2. Attiva queste tre API: [Gmail](https://console.cloud.google.com/apis/library/gmail.googleapis.com), [Google Calendar](https://console.cloud.google.com/apis/library/calendar-json.googleapis.com) e [Google Drive](https://console.cloud.google.com/apis/library/drive.googleapis.com).
 3. In **Schermata consenso OAuth** scegli *Esterno*, compila i campi richiesti e aggiungi la tua email tra gli **utenti di test**.
 4. In **Credenziali → Crea credenziali → ID client OAuth** scegli *Applicazione web*.
    In **Origini JavaScript autorizzate** inserisci `https://TUO-UTENTE.github.io`.
-5. Copia l'**ID client** e incollalo in **MIO → Impostazioni → Gmail**.
-6. Vai nella sezione Gmail e premi **Accedi con Google**.
+5. Copia l'**ID client** e incollalo in **MIO → Impostazioni → Account Google**.
+6. Premi **Accedi con Google**.
 
-L'accesso è in sola lettura e avviene direttamente tra il tuo browser e Google. L'accesso dura circa un'ora: poi basta premere di nuovo "Accedi".
+Gmail e Calendar sono in **sola lettura**. Drive viene usato solo per una cartella privata e nascosta dell'app (`appDataFolder`): MIO non può vedere gli altri tuoi file.
+Tutto avviene direttamente tra il tuo browser e Google. L'accesso dura circa un'ora: poi basta premere di nuovo "Accedi".
+
+### Stessi dati su iPhone e computer
+
+1. Su entrambi i dispositivi apri MIO dall'indirizzo GitHub Pages, inserisci lo **stesso Client ID** e accedi con lo **stesso account Google**.
+2. Lascia attiva l'opzione *Sincronizza automaticamente* (Impostazioni → Account Google).
+3. Ogni modifica viene salvata su Drive dopo pochi secondi. All'apertura MIO scarica le modifiche fatte sull'altro dispositivo.
+   Se hai modificato qualcosa su entrambi senza essere collegato, MIO ti chiede quale versione tenere.
+
+## 🔔 Promemoria
+
+Quando crei un evento scegli **Avviso** (all'ora dell'evento, 5/15/30 minuti prima, 1 ora, 1 giorno…). Il browser chiederà il permesso per le notifiche.
+I promemoria suonano **solo mentre MIO è aperta** (anche in una scheda in secondo piano), perché l'app non ha un server che invii notifiche.
+Sull'iPhone le notifiche funzionano solo se MIO è aggiunta alla schermata Home; altrimenti l'avviso compare dentro l'app.
 
 ---
 
@@ -112,5 +127,7 @@ js/notes.js       note stile Keep
 js/calendar.js    calendario stile iPhone
 js/settings.js    impostazioni e backup
 js/search.js      ricerca globale (Ctrl+K)
+js/sync.js        sincronizzazione con Google Drive e lettura di Google Calendar
+js/reminders.js   promemoria degli eventi
 manifest.json, sw.js, icons/   installazione come app e uso offline
 ```

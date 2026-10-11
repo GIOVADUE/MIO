@@ -39,6 +39,7 @@ if (/Mac|iPhone|iPad/.test(navigator.platform)) $('#searchBtn kbd').textContent 
 applyTheme();
 renderPagesNav();
 route();
+if (Sync.enabled()) Sync.run();
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   navigator.serviceWorker.register('sw.js').catch(() => {});
