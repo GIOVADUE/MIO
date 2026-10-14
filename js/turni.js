@@ -75,6 +75,7 @@ Views.turni = {
           <div class="spacer"></div>
           <button class="btn" id="tAdd">+ Dipendente</button>
           <button class="btn" id="tCopy" title="Copia i turni della settimana precedente">⧉ Copia sett. prec.</button>
+          <button class="btn" id="tRepeat" title="Copia questa settimana sulle settimane successive">↻ Ripeti schema</button>
           <button class="btn" id="tXls">⬇️ Excel</button>
           <button class="btn" id="tCsv">⬇️ CSV</button>
           <button class="btn" id="tImp">⬆️ Importa CSV</button>
@@ -94,6 +95,7 @@ Views.turni = {
       $$('#tMode button', view).forEach(b => b.classList.toggle('on', b.dataset.m === mode));
       $('#tRange', view).textContent = rangeLabel(ds);
       $('#tCopy', view).style.display = mode === 'week' ? '' : 'none';
+      $('#tRepeat', view).style.display = mode === 'week' ? '' : 'none';
       $('#tLegend', view).innerHTML = d.types.map(t =>
         `<button class="leg" data-code="${esc(t.code)}" style="--c:${t.color}"><b>${esc(t.code)}</b> ${esc(t.label)}${t.start ? ` <span>${t.start}–${t.end}</span>` : ''}</button>`
       ).join('') + `<button class="leg" data-code="" style="--c:transparent">⌫ Svuota</button><button class="btn ghost sm" id="tTypes">Modifica turni</button>`;
@@ -293,6 +295,44 @@ Views.turni = {
       Turni.save(d);
       paint();
     };
+    $('#tRepeat', view).onclick = () => {
+      const m = openModal(`
+        <h3>Ripeti lo schema di questa settimana</h3>
+        <label class="field"><span>Per quante settimane successive?</span>
+          <input type="number" id="rpN" min="1" max="52" value="4"></label>
+        <label class="check"><input type="checkbox" id="rpRot"> Rotazione: ogni settimana ogni persona prende lo schema della persona sopra di lei</label>
+        <label class="check"><input type="checkbox" id="rpOver" checked> Sovrascrivi le celle già compilate</label>
+        <p class="muted small" id="rpInfo"></p>
+        <div class="modal-actions"><button class="btn" id="rpNo">Annulla</button><button class="btn primary" id="rpOk">Applica</button></div>`);
+      const info = () => {
+        const n = Math.min(52, Math.max(1, +$('#rpN', m.el).value || 1)), s = startOfWeek(anchor);
+        const end = addDays(s, 7 * n + 6);
+        $('#rpInfo', m.el).textContent = `Verranno compilate le settimane fino a ${fullDate(end).toLowerCase()}.`;
+      };
+      $('#rpN', m.el).oninput = info;
+      info();
+      $('#rpNo', m.el).onclick = m.close;
+      $('#rpOk', m.el).onclick = () => {
+        const n = Math.min(52, Math.max(1, +$('#rpN', m.el).value || 1));
+        const rot = $('#rpRot', m.el).checked, over = $('#rpOver', m.el).checked;
+        const d = Turni.data(), ds = days(), emps = d.employees, len = emps.length;
+        for (let w = 1; w <= n; w++) {
+          emps.forEach((emp, i) => {
+            const src = emps[rot ? (((i - w) % len) + len) % len : i];
+            ds.forEach(x => {
+              const code = d.grid[ymd(x) + '|' + src.id], k = ymd(addDays(x, 7 * w)) + '|' + emp.id;
+              if (!over && d.grid[k]) return;
+              if (code) d.grid[k] = code; else if (over) delete d.grid[k];
+            });
+          });
+        }
+        Turni.save(d);
+        m.close();
+        toast(`Schema ripetuto su ${n} settiman${n === 1 ? 'a' : 'e'}`);
+        paint();
+      };
+    };
+
     $('#tCopy', view).onclick = () => {
       const d = Turni.data(), ds = days();
       if (!confirm('Copiare qui i turni della settimana precedente? Le celle attuali verranno sovrascritte.')) return;

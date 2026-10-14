@@ -4,13 +4,13 @@ Un'app in stile Notion, più semplice, che riunisce in un unico posto:
 
 | Sezione | Cosa fa |
 |---|---|
-| 🏠 **Dashboard** | Riepilogo del giorno: eventi, turni, email non lette, notizie, note fissate, pagine recenti |
+| 🏠 **Dashboard** | Riepilogo del giorno: **meteo** a 5 giorni, eventi, turni, email non lette, notizie, note fissate, pagine recenti |
 | 📄 **Pagine** | Editor stile Notion: titoli, elenchi, caselle ☑, citazioni, codice, link, icona emoji, **immagini** (pulsante 🖼️, incolla o trascina) e **modelli** pronti (Diario, Riunione, Lista della spesa, Progetto, Viaggio, Ricetta) |
 | 📰 **Notizie** | Google News in italiano, per argomento o con ricerca; 🔖 salva un articolo nelle note |
 | ✉️ **Gmail** | Posta in arrivo, da leggere, speciali e importanti; ricerca; pulsante "Scrivi" (sola lettura) |
-| 📊 **Turni di lavoro** | Tabella stile Excel: settimana o mese, colori, ore totali, copertura, esporta in Excel/CSV, importa CSV, stampa, **grafico delle ore lavorate** per persona |
+| 📊 **Turni di lavoro** | Tabella stile Excel: settimana o mese, colori, ore totali, copertura, esporta in Excel/CSV, importa CSV, stampa, **grafico delle ore lavorate** per persona, **ripeti schema** su più settimane (anche a rotazione) |
 | 💡 **Note** | Stile Google Keep: colori, note fissate, elenchi con caselle, ricerca |
-| 📅 **Calendario** | Stile iPhone: vista mensile, pallini sui giorni con eventi, eventi ricorrenti (giorno/settimana/mese/anno), promemoria 🔔, eventi di Google Calendar, scorrimento per cambiare mese, i tuoi turni già inseriti |
+| 📅 **Calendario** | Stile iPhone: vista mensile, pallini sui giorni con eventi, eventi ricorrenti (giorno/settimana/mese/anno), promemoria 🔔, eventi di Google Calendar, **vista elenco** dei prossimi eventi, scorrimento per cambiare mese, i tuoi turni già inseriti |
 | 🔄 **Sincronizzazione** | Stessi dati su iPhone e computer tramite una cartella privata dell'app su Google Drive |
 | 🔍 **Cerca** | Ricerca globale con `Ctrl+K` (`⌘K` su Mac) su pagine, note, eventi e turni |
 
@@ -128,6 +128,7 @@ js/notes.js       note stile Keep
 js/calendar.js    calendario stile iPhone
 js/settings.js    impostazioni e backup
 js/search.js      ricerca globale (Ctrl+K)
+js/weather.js     meteo (Open-Meteo)
 js/sync.js        sincronizzazione con Google Drive e lettura di Google Calendar
 js/reminders.js   promemoria degli eventi
 manifest.json, sw.js, icons/   installazione come app e uso offline

@@ -21,6 +21,10 @@ Views.dashboard = {
         </div>
         <div class="dash">
           <section class="card widget">
+            <header><h3>🌤️ Meteo</h3></header>
+            <div id="dWx"></div>
+          </section>
+          <section class="card widget">
             <header><h3>📅 Oggi</h3><a href="#/calendario" class="small">Calendario →</a></header>
             ${items.length ? items.map(evRow).join('') : '<p class="muted">Niente in programma oggi.</p>'}
             ${tomorrow.length ? `<div class="sec-label">Domani</div>${tomorrow.slice(0, 3).map(evRow).join('')}` : ''}
@@ -60,6 +64,9 @@ Views.dashboard = {
       </div>`;
 
     $('#dNewPage', view).onclick = () => Pages.create();
+    const wx = $('#dWx', view);
+    const paintWx = () => view.isConnected && Weather.widget(wx, paintWx);
+    paintWx();
     GCal.ensure(now, () => view.isConnected && Views.dashboard.render(view));
     GCal.ensure(addDays(now, 1), () => view.isConnected && Views.dashboard.render(view));
 

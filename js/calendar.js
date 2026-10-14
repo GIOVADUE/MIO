@@ -120,6 +120,7 @@ Views.calendario = {
           <div class="ios-top">
             <button class="link-btn red" id="cToday">Oggi</button>
             <div class="spacer"></div>
+            <button class="ios-listbtn" id="cList" title="Vista elenco" aria-label="Vista elenco">☰</button>
             <button class="ios-plus" id="cAdd" aria-label="Nuovo evento">+</button>
           </div>
           <div class="ios-head">
@@ -131,6 +132,7 @@ Views.calendario = {
           </div>
           <div class="ios-wd">${['L', 'M', 'M', 'G', 'V', 'S', 'D'].map((x, i) => `<span class="${i > 4 ? 'we' : ''}">${x}</span>`).join('')}</div>
           <div class="ios-grid" id="cGrid"></div>
+          <div id="cAgenda" class="ios-agenda"></div>
           <div class="ios-day">
             <div class="ios-day-title" id="cDayTitle"></div>
             <div id="cEvents"></div>
@@ -139,8 +141,33 @@ Views.calendario = {
       </div>`;
 
     const grid = $('#cGrid', view);
+    const cal = $('.ios-cal', view);
+    let listMode = Store.get('calMode', 'month') === 'list';
+    const evRow = e => `<div class="ios-ev ${e.kind}" ${e.id ? `data-id="${e.id}"` : ''} ${e.link ? `data-link="${esc(e.link)}" title="Apri in Google Calendar"` : ''}>
+            <span class="bar" style="background:${e.color}"></span>
+            <div class="ios-ev-main"><div class="ios-ev-title">${esc(e.title)}${e.repeat ? ' <span class="muted" title="Si ripete">↻</span>' : ''}${e.alert !== undefined && e.alert !== '' ? ' <span class="muted" title="Promemoria">🔔</span>' : ''}${e.kind === 'google' ? ' <span class="gbadge">Google</span>' : ''}</div>${e.place ? `<div class="muted small">${esc(e.place)}</div>` : ''}</div>
+            <div class="ios-ev-time">${esc(Calendar.timeLabel(e))}</div></div>`;
+
+    // Vista elenco: prossimi 60 giorni
+    function paintList() {
+      $('#cTitle', view).innerHTML = 'Prossimi eventi';
+      const today = new Date();
+      GCal.ensure(today, () => view.isConnected && paint());
+      GCal.ensure(addDays(today, 31), () => view.isConnected && paint());
+      let html = '';
+      for (let i = 0; i < 60; i++) {
+        const d = addDays(today, i), items = Calendar.dayItems(d);
+        if (!items.length) continue;
+        const label = i === 0 ? 'Oggi' : i === 1 ? 'Domani' : fullDate(d);
+        html += `<div class="ag-day ${i === 0 ? 'today' : ''}">${esc(label)}</div>${items.map(evRow).join('')}`;
+      }
+      $('#cAgenda', view).innerHTML = html || '<div class="ios-none">Nessun evento nei prossimi 60 giorni</div>';
+    }
 
     function paint() {
+      cal.classList.toggle('list-mode', listMode);
+      $('#cList', view).classList.toggle('on', listMode);
+      if (listMode) return paintList();
       const today = ymd(new Date()), sel = ymd(selected);
       $('#cTitle', view).innerHTML = `${MESI[month.getMonth()]} <span>${month.getFullYear()}</span>`;
       const lead = (month.getDay() + 6) % 7;
@@ -162,17 +189,14 @@ Views.calendario = {
       $('#cDayTitle', view).textContent = fullDate(selected);
       const items = Calendar.dayItems(selected);
       $('#cEvents', view).innerHTML = items.length
-        ? items.map(e => `<div class="ios-ev ${e.kind}" ${e.id ? `data-id="${e.id}"` : ''} ${e.link ? `data-link="${esc(e.link)}" title="Apri in Google Calendar"` : ''}>
-            <span class="bar" style="background:${e.color}"></span>
-            <div class="ios-ev-main"><div class="ios-ev-title">${esc(e.title)}${e.repeat ? ' <span class="muted" title="Si ripete">↻</span>' : ''}${e.alert !== undefined && e.alert !== '' ? ' <span class="muted" title="Promemoria">🔔</span>' : ''}${e.kind === 'google' ? ' <span class="gbadge">Google</span>' : ''}</div>${e.place ? `<div class="muted small">${esc(e.place)}</div>` : ''}</div>
-            <div class="ios-ev-time">${esc(Calendar.timeLabel(e))}</div></div>`).join('')
+        ? items.map(evRow).join('')
         : '<div class="ios-none">Nessun evento</div>';
     }
 
     const go = dir => { month = new Date(month.getFullYear(), month.getMonth() + dir, 1); paint(); };
     $('#cPrev', view).onclick = () => go(-1);
     $('#cNext', view).onclick = () => go(1);
-    $('#cToday', view).onclick = () => { selected = new Date(); month = new Date(selected.getFullYear(), selected.getMonth(), 1); paint(); };
+    $('#cToday', view).onclick = () => { listMode = false; Store.set('calMode', 'month'); selected = new Date(); month = new Date(selected.getFullYear(), selected.getMonth(), 1); paint(); };
     grid.onclick = e => {
       const c = e.target.closest('.ios-cell[data-d]');
       if (!c) return;
@@ -182,7 +206,8 @@ Views.calendario = {
     };
     const done = date => { selected = parseYmd(date); month = new Date(selected.getFullYear(), selected.getMonth(), 1); paint(); };
     $('#cAdd', view).onclick = () => Calendar.sheet({ date: ymd(selected) }, done);
-    $('#cEvents', view).onclick = e => {
+    $('#cList', view).onclick = () => { listMode = !listMode; Store.set('calMode', listMode ? 'list' : 'month'); paint(); };
+    cal.onclick = e => {
       const r = e.target.closest('.ios-ev');
       if (!r) return;
       if (r.classList.contains('shift')) { location.hash = '#/turni'; return; }
