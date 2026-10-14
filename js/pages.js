@@ -41,6 +41,28 @@ const Pages = {
   }
 };
 
+// Riduce le immagini (max 1200px, JPEG) per non esaurire la memoria del browser
+function shrinkImage(file, max = 1200) {
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const k = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * k);
+      c.height = Math.round(img.height * k);
+      const ctx = c.getContext('2d');
+      const png = file.type === 'image/png' && file.size < 200000;
+      if (!png) { ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height); }
+      ctx.drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      res(png ? c.toDataURL('image/png') : c.toDataURL('image/jpeg', 0.8));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('img')); };
+    img.src = url;
+  });
+}
+
 const EMOJI = ['📄', '📝', '📌', '📚', '💼', '🏠', '🎯', '✅', '💡', '🧠', '📊', '🗂️', '✈️', '🍝', '🏋️', '🎵', '🎬', '🛒', '💰', '❤️', '⭐', '🔥', '🌱', '🚀', '🧾', '📞', '🛠️', '🎓', '🐶', '☕'];
 
 function renderPagesNav() {
@@ -83,8 +105,13 @@ Views.pagina = {
           <button data-block="PRE" title="Codice">&lt;/&gt;</button>
           <button data-cmd="insertHorizontalRule" title="Divisore">—</button>
           <button data-act="link" title="Link">🔗</button>
+          <button data-act="image" title="Immagine (puoi anche incollarla o trascinarla)">🖼️</button>
         </div>
         <div class="editor" id="pEditor" contenteditable="true" data-placeholder="Inizia a scrivere…">${page.content}</div>
+        <div class="tpl-box" id="pTpl" hidden>
+          <div class="sec-label">Oppure inizia con un modello</div>
+          <div class="tpl-grid">${TEMPLATES.map((t, i) => `<button class="tpl" data-t="${i}"><span>${t.icon}</span>${esc(t.name)}</button>`).join('')}</div>
+        </div>
       </div>`;
 
     const titleEl = $('#pTitle', view);
@@ -97,7 +124,83 @@ Views.pagina = {
       saved.textContent = 'Salvato';
       renderPagesNav();
     }, 400);
-    const dirty = () => { saved.textContent = '…'; save(); };
+    const dirty = () => { saved.textContent = '…'; save(); syncTpl(); };
+
+    // Modelli: visibili solo finché la pagina è vuota
+    const tplBox = $('#pTpl', view);
+    function syncTpl() {
+      tplBox.hidden = !!(editor.textContent.trim() || $('img', editor) || titleEl.textContent.trim());
+      view.firstElementChild.classList.toggle('is-empty', !tplBox.hidden);
+    }
+    syncTpl();
+    tplBox.onclick = e => {
+      const b = e.target.closest('.tpl');
+      if (!b) return;
+      const t = TEMPLATES[b.dataset.t], now = new Date();
+      titleEl.textContent = t.title(now);
+      editor.innerHTML = t.html(now).trim();
+      Pages.update(id, { icon: t.icon, title: titleEl.textContent, content: editor.innerHTML });
+      $('#pIcon', view).textContent = t.icon;
+      renderPagesNav();
+      syncTpl();
+      const first = editor.querySelector('li, .todo span, p');
+      if (first) { editor.focus(); placeCaret(first); }
+    };
+
+    // Immagini: pulsante, incolla, trascina. Vengono ridimensionate per non riempire la memoria.
+    let savedRange = null;
+    const keepRange = () => { const s = getSelection(); if (s.rangeCount && editor.contains(s.anchorNode)) savedRange = s.getRangeAt(0).cloneRange(); };
+    editor.addEventListener('keyup', keepRange);
+    editor.addEventListener('mouseup', keepRange);
+    async function insertImages(files) {
+      for (const f of files) {
+        if (!f.type.startsWith('image/')) { toast('Si possono inserire solo immagini'); continue; }
+        try {
+          const src = await shrinkImage(f);
+          editor.focus();
+          if (savedRange) { const s = getSelection(); s.removeAllRanges(); s.addRange(savedRange); }
+          document.execCommand('insertHTML', false, `<img class="pimg" data-size="l" src="${src}" alt="">`);
+          keepRange();
+        } catch { toast('Impossibile leggere questa immagine'); }
+      }
+      dirty();
+    }
+    editor.addEventListener('paste', e => {
+      const files = [...(e.clipboardData?.files || [])].filter(f => f.type.startsWith('image/'));
+      if (files.length) { e.preventDefault(); keepRange(); insertImages(files); }
+    });
+    editor.addEventListener('dragover', e => { if (e.dataTransfer?.types.includes('Files')) e.preventDefault(); });
+    editor.addEventListener('drop', e => {
+      const files = [...(e.dataTransfer?.files || [])];
+      if (!files.length) return;
+      e.preventDefault();
+      const r = document.caretRangeFromPoint?.(e.clientX, e.clientY);
+      if (r) savedRange = r;
+      insertImages(files);
+    });
+
+    // Clic su un'immagine: dimensione o elimina
+    editor.addEventListener('click', e => {
+      const img = e.target.closest('img.pimg');
+      $('.img-pop')?.remove();
+      if (!img) return;
+      const pop = el(`<div class="img-pop">
+        <button data-s="s">Piccola</button><button data-s="m">Media</button><button data-s="l">Grande</button><button data-s="del">🗑️</button></div>`);
+      const r = img.getBoundingClientRect();
+      pop.style.top = Math.max(r.top + 8, 8) + 'px';
+      pop.style.left = (r.left + 8) + 'px';
+      document.body.appendChild(pop);
+      pop.onclick = ev => {
+        const s = ev.target.closest('button')?.dataset.s;
+        if (!s) return;
+        if (s === 'del') img.remove(); else img.dataset.size = s;
+        pop.remove();
+        dirty();
+      };
+      setTimeout(() => document.addEventListener('mousedown', function off(ev) {
+        if (!pop.contains(ev.target)) { pop.remove(); document.removeEventListener('mousedown', off); }
+      }));
+    });
 
     titleEl.addEventListener('input', dirty);
     titleEl.addEventListener('keydown', e => {
@@ -127,6 +230,10 @@ Views.pagina = {
       if (b.dataset.block) document.execCommand('formatBlock', false, b.dataset.block);
       else if (b.dataset.cmd) document.execCommand(b.dataset.cmd, false, null);
       else if (b.dataset.act === 'todo') insertTodo();
+      else if (b.dataset.act === 'image') {
+        pickFile('image/*').then(f => f && insertImages([f]));
+        return;
+      }
       else if (b.dataset.act === 'link') {
         const url = prompt('Indirizzo del link:', 'https://');
         if (url) document.execCommand('createLink', false, url);

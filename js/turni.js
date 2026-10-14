@@ -82,6 +82,7 @@ Views.turni = {
         </div>
         <div class="legend no-print" id="tLegend"></div>
         <div class="sheet-wrap"><table class="sheet" id="tSheet"></table></div>
+        <section class="card hours-card" id="tHours"></section>
         <p class="muted small no-print">Scrivi il codice del turno in una cella (es. <b>M</b>), oppure seleziona una cella e tocca un turno nella legenda.
         Frecce e Invio per spostarti come in Excel. Doppio clic sul nome per rinominare.</p>
       </div>`;
@@ -123,11 +124,73 @@ Views.turni = {
         return `<td>${Object.entries(counts).map(([k, v]) => `<span>${esc(k)}${v}</span>`).join(' ')}</td>`;
       }).join('')}<td></td></tr></tfoot>`;
 
+      paintHours(d, ds);
       sheet.innerHTML = head + `<tbody>${body || `<tr><td colspan="${ds.length + 2}" class="empty">Aggiungi un dipendente per iniziare</td></tr>`}</tbody>` + foot;
       if (lastCell) {
         const c = $(`.cell[data-r="${lastCell.r}"][data-c="${lastCell.c}"]`, sheet);
         if (c) c.focus();
       }
+    }
+
+    // Grafico: ore lavorate per persona nel periodo visibile
+    function paintHours(d, ds) {
+      const rows = d.employees.map(emp => {
+        let hours = 0, worked = 0, nights = 0;
+        const byType = {};
+        ds.forEach(x => {
+          const code = d.grid[ymd(x) + '|' + emp.id], t = Turni.type(d, code);
+          if (!code) return;
+          const h = Turni.hours(t);
+          hours += h;
+          if (h) worked++;
+          if (t && t.start && t.end && t.end <= t.start) nights++;
+          byType[code] = byType[code] || { n: 0, h: 0, label: t ? t.label : code };
+          byType[code].n++;
+          byType[code].h += h;
+        });
+        return { emp, hours, worked, nights, byType };
+      });
+      const box = $('#tHours', view);
+      if (!rows.length) { box.style.display = 'none'; return; }
+      box.style.display = '';
+      const total = rows.reduce((s, r) => s + r.hours, 0);
+      const max = Math.max(...rows.map(r => r.hours), 1);
+      const period = mode === 'week' ? 'questa settimana' : `${MESI[anchor.getMonth()].toLowerCase()} ${anchor.getFullYear()}`;
+      box.innerHTML = `
+        <header class="hours-head"><h3>Ore lavorate · ${esc(period)}</h3></header>
+        <div class="hours-stats">
+          <div><span class="hs-n">${fmtH(total)}</span><span class="hs-l">ore totali</span></div>
+          <div><span class="hs-n">${fmtH(total / rows.length)}</span><span class="hs-l">media a persona</span></div>
+          <div><span class="hs-n">${rows.reduce((s, r) => s + r.worked, 0)}</span><span class="hs-l">turni lavorati</span></div>
+          <div><span class="hs-n">${rows.reduce((s, r) => s + r.nights, 0)}</span><span class="hs-l">turni di notte</span></div>
+        </div>
+        <div class="hbars" role="list">
+          ${rows.map((r, i) => `<div class="hbar" role="listitem" tabindex="0" data-i="${i}"
+              aria-label="${esc(r.emp.name)}: ${fmtH(r.hours)} ore">
+            <span class="hbar-name ellipsis">${esc(r.emp.name)}</span>
+            <span class="hbar-track"><span class="hbar-fill" style="width:calc((100% - 64px) * ${r.hours ? Math.max(r.hours / max, 0.015) : 0})"></span>
+              <span class="hbar-val">${fmtH(r.hours)} h</span></span>
+          </div>`).join('')}
+        </div>
+        <div class="viz-tip" id="tTip" hidden></div>`;
+      const tip = $('#tTip', box);
+      const show = el => {
+        const r = rows[el.dataset.i];
+        const parts = Object.entries(r.byType).sort((a, b) => b[1].h - a[1].h || b[1].n - a[1].n)
+          .map(([code, v]) => `<div><b>${esc(code)}</b> ${esc(v.label)}<span>${v.n}× · ${fmtH(v.h)} h</span></div>`).join('');
+        tip.innerHTML = `<strong>${esc(r.emp.name)}</strong><div class="tip-total">${fmtH(r.hours)} ore</div>${parts || '<div class="muted">Nessun turno</div>'}`;
+        tip.hidden = false;
+        const br = box.getBoundingClientRect(), er = el.getBoundingClientRect();
+        tip.style.top = (er.bottom - br.top + 6) + 'px';
+        tip.style.left = Math.min(er.left - br.left + 120, box.clientWidth - tip.offsetWidth - 8) + 'px';
+      };
+      $$('.hbar', box).forEach(el => {
+        el.addEventListener('mouseenter', () => show(el));
+        el.addEventListener('focus', () => show(el));
+        el.addEventListener('click', () => show(el));
+        el.addEventListener('mouseleave', () => { tip.hidden = true; });
+        el.addEventListener('blur', () => { tip.hidden = true; });
+      });
     }
 
     function setCell(r, c, code) {

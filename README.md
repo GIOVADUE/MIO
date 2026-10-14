@@ -5,10 +5,10 @@ Un'app in stile Notion, più semplice, che riunisce in un unico posto:
 | Sezione | Cosa fa |
 |---|---|
 | 🏠 **Dashboard** | Riepilogo del giorno: eventi, turni, email non lette, notizie, note fissate, pagine recenti |
-| 📄 **Pagine** | Editor stile Notion: titoli, elenchi, caselle ☑, citazioni, codice, link, icona emoji |
+| 📄 **Pagine** | Editor stile Notion: titoli, elenchi, caselle ☑, citazioni, codice, link, icona emoji, **immagini** (pulsante 🖼️, incolla o trascina) e **modelli** pronti (Diario, Riunione, Lista della spesa, Progetto, Viaggio, Ricetta) |
 | 📰 **Notizie** | Google News in italiano, per argomento o con ricerca; 🔖 salva un articolo nelle note |
 | ✉️ **Gmail** | Posta in arrivo, da leggere, speciali e importanti; ricerca; pulsante "Scrivi" (sola lettura) |
-| 📊 **Turni di lavoro** | Tabella stile Excel: settimana o mese, colori, ore totali, copertura, esporta in Excel/CSV, importa CSV, stampa |
+| 📊 **Turni di lavoro** | Tabella stile Excel: settimana o mese, colori, ore totali, copertura, esporta in Excel/CSV, importa CSV, stampa, **grafico delle ore lavorate** per persona |
 | 💡 **Note** | Stile Google Keep: colori, note fissate, elenchi con caselle, ricerca |
 | 📅 **Calendario** | Stile iPhone: vista mensile, pallini sui giorni con eventi, eventi ricorrenti (giorno/settimana/mese/anno), promemoria 🔔, eventi di Google Calendar, scorrimento per cambiare mese, i tuoi turni già inseriti |
 | 🔄 **Sincronizzazione** | Stessi dati su iPhone e computer tramite una cartella privata dell'app su Google Drive |
@@ -119,7 +119,8 @@ css/style.css     stile (chiaro/scuro automatico)
 js/util.js        funzioni comuni e salvataggio
 js/app.js         navigazione
 js/dashboard.js   dashboard
-js/pages.js       pagine stile Notion
+js/pages.js       pagine stile Notion (con immagini)
+js/templates.js   modelli di pagina
 js/news.js        Google News
 js/gmail.js       Gmail
 js/turni.js       tabella turni
@@ -131,3 +132,7 @@ js/sync.js        sincronizzazione con Google Drive e lettura di Google Calendar
 js/reminders.js   promemoria degli eventi
 manifest.json, sw.js, icons/   installazione come app e uso offline
 ```
+
+## 🖼️ Immagini nelle pagine
+
+Le immagini vengono ridotte automaticamente (massimo 1200 pixel) e salvate insieme alla pagina. Il browser ha però poco spazio (circa 5 MB in tutto): conviene inserire poche immagini per pagina. Se lo spazio finisce, MIO lo segnala. Per i file pesanti (PDF, documenti) è meglio incollare un link 🔗 a Google Drive.
