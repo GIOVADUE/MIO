@@ -14,9 +14,11 @@ const Search = {
     Calendar.all().forEach(e => out.push({
       icon: '📅', title: e.title, sub: `Evento · ${fullDate(parseYmd(e.date))}`, text: (e.place || '') + ' ' + (e.notes || ''), href: '#/calendario'
     }));
+    const tp = Tempo.data();
+    tp.tasks.forEach(t => out.push({ icon: t.done ? '✅' : '⏱️', title: t.title, sub: `Attività · ${Tempo.area(tp, t.area).name}`, text: '', href: '#/tempo' }));
     Turni.data().employees.forEach(emp => out.push({ icon: '📊', title: emp.name, sub: 'Dipendente nei turni', text: '', href: '#/turni' }));
     [['🏠', 'Dashboard', '#/dashboard'], ['📰', 'Notizie', '#/notizie'], ['✉️', 'Gmail', '#/gmail'], ['📊', 'Turni di lavoro', '#/turni'],
-     ['💡', 'Note', '#/note'], ['📅', 'Calendario', '#/calendario'], ['⚙️', 'Impostazioni', '#/impostazioni']]
+     ['💡', 'Note', '#/note'], ['📅', 'Calendario', '#/calendario'], ['⏱️', 'Tempo', '#/tempo'], ['⚙️', 'Impostazioni', '#/impostazioni']]
       .forEach(([icon, title, href]) => out.push({ icon, title, sub: 'Sezione', text: '', href }));
     return out;
   },

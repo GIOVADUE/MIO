@@ -58,7 +58,7 @@ const Store = {
     }
   },
   // chiavi che restano su questo dispositivo e non vengono sincronizzate
-  local: ['turniMode', 'calMode', 'firedAlerts', '__changed', '__synced'],
+  local: ['turniMode', 'calMode', 'tempoMode', 'tempoLen', 'tempoTimer', 'firedAlerts', '__changed', '__synced'],
   keys() {
     try { return Object.keys(localStorage).filter(k => k.startsWith('mio.')); } catch { return []; }
   }
