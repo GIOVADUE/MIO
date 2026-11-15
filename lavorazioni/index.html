@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>LAVORAZIONI</title>
+  <meta name="description" content="Le attività del mese, giorno per giorno: da fare, concluse, in sospeso.">
+  <meta name="theme-color" content="#1f4e79">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="LAVORAZIONI">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="title-row">
+      <h1>LAVORAZIONI</h1>
+      <button class="icon-btn" id="menuBtn" aria-label="Menu">⋯</button>
+    </div>
+    <div class="month-row">
+      <button class="nav-btn" id="prevBtn" aria-label="Mese precedente">‹</button>
+      <button class="month-label" id="monthLabel" title="Torna a oggi"></button>
+      <button class="nav-btn" id="nextBtn" aria-label="Mese successivo">›</button>
+    </div>
+    <div class="stats" id="stats"></div>
+  </header>
+
+  <main id="days"></main>
+
+  <div class="menu" id="menu" hidden>
+    <button data-act="today">📍 Vai a oggi</button>
+    <button data-act="toggleEmpty" id="toggleEmpty"></button>
+    <button data-act="copyPending">↪︎ Porta le non concluse al mese dopo</button>
+    <button data-act="share">📤 Condividi riepilogo del mese</button>
+    <button data-act="export">💾 Salva backup</button>
+    <button data-act="import">📂 Ripristina backup</button>
+    <button data-act="clearMonth" class="danger">🗑 Svuota questo mese</button>
+  </div>
+  <input type="file" id="importFile" accept="application/json,.json" hidden>
+  <div class="toast" id="toast" hidden></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
