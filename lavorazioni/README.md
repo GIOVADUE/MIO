@@ -13,7 +13,16 @@ Accanto a ogni attività ci sono tre caselle: **Da fare**, **Conclusa**, **In so
 - I pulsanti in alto (Tutte / Da fare / Concluse / In sospeso) mostrano i totali del mese e filtrano l'elenco.
 - Menu **⋯**: mostra solo i giorni con attività, porta le non concluse al mese dopo, condividi il riepilogo (WhatsApp, email…), salva/ripristina backup, svuota il mese.
 
-I dati restano **sul telefono** (nessun account, funziona anche offline). Usa *Salva backup* ogni tanto.
+## Su tutti i dispositivi, anche insieme
+Le attività vengono salvate online (database Supabase, server in Europa) e compaiono **in tempo reale**
+su ogni telefono, tablet o computer collegato. Funziona anche senza internet: le modifiche vengono inviate appena torna la connessione.
+Sotto i filtri si vede lo stato: ☁️ *Sincronizzato*, ⏳ *Sincronizzo…* o 📴 *Offline*.
+
+**Per collegare un altro dispositivo:** menu **⋯ → 🔗 Collega altri dispositivi → Invia il link**, poi apri il link
+sull'altro dispositivo (oppure scrivi lì il codice personale). Il codice è la "chiave" delle tue attività: non darlo a chi non deve vederle.
+
+Nota: con il piano gratuito di Supabase il database va in pausa dopo 7 giorni senza uso; si riattiva da
+supabase.com → progetto *lavorazioni* → **Restore** (nessun dato viene perso).
 
 ## Installarla sul telefono
 L'app è una web‑app installabile: va pubblicata una volta su un indirizzo `https://`, per esempio con GitHub Pages

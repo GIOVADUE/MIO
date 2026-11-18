@@ -1,6 +1,6 @@
 /* Service worker: LAVORAZIONI funziona anche senza connessione. Aggiorna VERSION quando modifichi i file. */
-const VERSION = 'lavorazioni-v1';
-const FILES = ['./', 'index.html', 'style.css', 'app.js', 'manifest.json', 'icons/icon.svg', 'icons/icon-180.png', 'icons/icon-192.png'];
+const VERSION = 'lavorazioni-v2';
+const FILES = ['./', 'index.html', 'style.css', 'app.js', 'vendor/supabase.js', 'manifest.json', 'icons/icon.svg', 'icons/icon-180.png', 'icons/icon-192.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));

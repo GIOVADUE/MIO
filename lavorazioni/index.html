@@ -27,11 +27,13 @@
       <button class="nav-btn" id="nextBtn" aria-label="Mese successivo">›</button>
     </div>
     <div class="stats" id="stats"></div>
+    <button class="sync" id="syncStatus" title="Sincronizza ora"></button>
   </header>
 
   <main id="days"></main>
 
   <div class="menu" id="menu" hidden>
+    <button data-act="devices">🔗 Collega altri dispositivi</button>
     <button data-act="today">📍 Vai a oggi</button>
     <button data-act="toggleEmpty" id="toggleEmpty"></button>
     <button data-act="copyPending">↪︎ Porta le non concluse al mese dopo</button>
@@ -43,6 +45,7 @@
   <input type="file" id="importFile" accept="application/json,.json" hidden>
   <div class="toast" id="toast" hidden></div>
 
+  <script src="vendor/supabase.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
