@@ -9,6 +9,10 @@ Views.dashboard = {
     const tomorrow = Calendar.dayItems(addDays(now, 1));
     const shifts = Turni.forDate(now);
     const pinned = Notes.all().filter(n => n.pinned).slice(0, 4);
+    const tp = Tempo.data();
+    const blocks = Tempo.blocksFor(tp, ymd(now)).filter(b => b.end > `${pad(h)}:${pad(now.getMinutes())}`).slice(0, 4);
+    const urgent = tp.tasks.filter(t => !t.done && t.prio === 'q1').slice(0, 3);
+    const timer = Timer.state();
     const pages = [...Pages.all()].sort((a, b) => b.updated - a.updated).slice(0, 5);
 
     const evRow = e => `<div class="mini-ev"><span class="bar" style="background:${e.color}"></span><span class="grow ellipsis">${esc(e.title)}</span><span class="muted small">${esc(Calendar.timeLabel(e))}</span></div>`;
@@ -42,6 +46,14 @@ Views.dashboard = {
             ${shifts.length ? shifts.map(s => `<div class="mini-ev"><span class="pill" style="background:${s.type ? s.type.color : '#eee'}">${esc(s.code)}</span>
               <span class="grow ellipsis">${esc(s.emp.name)}</span><span class="muted small">${esc(s.type ? Turni.label(s.type) : '')}</span></div>`).join('')
               : '<p class="muted">Nessun turno inserito per oggi.</p>'}
+          </section>
+
+          <section class="card widget">
+            <header><h3>⏱️ Tempo di oggi</h3><a href="#/tempo" class="small">Pianifica →</a></header>
+            ${timer ? `<a class="mini-ev" href="#/tempo"><span class="pill" style="background:#fde68a">${timer.mode === 'focus' ? '🎯' : '☕'}</span><span class="grow ellipsis">${timer.mode === 'focus' ? esc(timer.label || 'Sessione di concentrazione') : 'Pausa'}</span><span class="muted small">${timer.pausedLeft != null ? 'in pausa' : 'in corso'}</span></a>` : ''}
+            ${blocks.length ? blocks.map(b => `<div class="mini-ev"><span class="bar" style="background:${Tempo.area(tp, b.area).color}"></span><span class="grow ellipsis">${esc(b.title)}</span><span class="muted small">${b.start}–${b.end}</span></div>`).join('')
+              : '<p class="muted">Nessun blocco pianificato per il resto della giornata.</p>'}
+            ${urgent.length ? `<div class="sec-label">Da fare subito</div>${urgent.map(t => `<div class="mini-ev"><span class="bar" style="background:${Tempo.area(tp, t.area).color}"></span><span class="grow ellipsis">${esc(t.title)}</span></div>`).join('')}` : ''}
           </section>
 
           <section class="card widget span2">

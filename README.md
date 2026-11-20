@@ -11,6 +11,7 @@ Un'app in stile Notion, più semplice, che riunisce in un unico posto:
 | 📊 **Turni di lavoro** | Tabella stile Excel: settimana o mese, colori, ore totali, copertura, esporta in Excel/CSV, importa CSV, stampa, **grafico delle ore lavorate** per persona, **ripeti schema** su più settimane (anche a rotazione) |
 | 💡 **Note** | Stile Google Keep: colori, note fissate, elenchi con caselle, ricerca |
 | 📅 **Calendario** | Stile iPhone: vista mensile, pallini sui giorni con eventi, eventi ricorrenti (giorno/settimana/mese/anno), promemoria 🔔, eventi di Google Calendar, **vista elenco** dei prossimi eventi, scorrimento per cambiare mese, i tuoi turni già inseriti |
+| ⏱️ **Tempo** | Organizza lavoro e vita personale: **blocchi orari** sulla giornata (accanto a eventi e turni), **matrice delle priorità** (Fai subito / Pianifica / Delega / Elimina) con trascinamento, **timer di concentrazione** 25 o 50 minuti con pausa, **bilancio della settimana** con ore di lavoro e personali per area rispetto ai tuoi obiettivi |
 | 🔄 **Sincronizzazione** | Stessi dati su iPhone e computer tramite una cartella privata dell'app su Google Drive |
 | 🔍 **Cerca** | Ricerca globale con `Ctrl+K` (`⌘K` su Mac) su pagine, note, eventi e turni |
 
